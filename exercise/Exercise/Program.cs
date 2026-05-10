@@ -1,4 +1,5 @@
 using Exercise.Data;
+using Exercise.Services.Movie;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -7,8 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder
     .Services
     .AddOpenApi()
-    //.RegisterDbContext()
-    //.RegisterIMovieService()
+    .AddDbContext<CinemaDbContext>(
+        options => options.UseSqlServer(
+            builder.Configuration.GetConnectionString("DefaultConnection")))
+    .AddScoped<IMovieService, MovieService>()
     .AddControllers();
 
 var app = builder.Build();
@@ -16,7 +19,6 @@ var cancellationToken = app.Lifetime.ApplicationStopping;
 
 if (!app.Environment.IsEnvironment("Testing"))
 {
-    // Note: this will crash since the CinemaDbContext is not registrated
     using var scope = app.Services.CreateScope();
 
     var data = scope

@@ -1,38 +1,71 @@
 ﻿namespace Exercise.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
+using Models.Service;
 using Models.Web;
+using Services.Movie;
 
-// TODO:
-// - Inject the IMovieService (use primary constructor).
-// - Register the service in Program.cs with the lifetime that makes sense.
-// - Implement each action body by calling the correct method of the service.
-// - Change the return type of each endpoint from IActionResult to ActionResult<TYourServiceType>.
-// - Don't forget to propagate the cancellationToken to the EF Core finalizing methods.
 [ApiController]
 [Route("api/[controller]")]
-public sealed class MoviesController : ControllerBase
+public sealed class MoviesController(
+    IMovieService service) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll(
+    public async Task<ActionResult<IEnumerable<MovieServiceModel>>> GetAll(
         CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
+    {
+        var movies = await service.GetAll(cancellationToken);
+        return this.Ok(movies);
+    }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(
+    public async Task<ActionResult<MovieServiceModel>> GetById(
         int id,
         CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
+    {
+        var movie = await service.GetById(
+            id,
+            cancellationToken);
+
+        if (movie is null)
+        {
+            return this.NotFound();
+        }
+
+        return this.Ok(movie);
+    }
 
     [HttpPost]
-    public async Task<IActionResult> Create(
+    public async Task<ActionResult<MovieServiceModel>> Create(
         CreateMovieRequestModel requestModel,
         CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
+    {
+        var createdMovie = await service.Create(
+            requestModel.Title,
+            requestModel.Genre,
+            requestModel.Year,
+            cancellationToken);
+
+        return this.CreatedAtAction(
+            nameof(this.GetById),
+            new { id = createdMovie.Id },
+            createdMovie);
+    }
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(
         int id,
         CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
+    {
+        var deleted = await service.Delete(
+            id,
+            cancellationToken);
+
+        if (!deleted)
+        {
+            return this.NotFound();
+        }
+
+        return this.NoContent();
+    }
 }
